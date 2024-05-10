@@ -1,2 +1,8 @@
 # curriculum_development_initiative
-SERVIR and ITC's joint Curriculum Development Initiative
+This repository holds all of the curriculum development materials created as a part of SERVIR and ITC's joint Curriculum Development Initiative. 
+
+# Background 
+SERVIR is a joint initiative of NASA and the US Agency for International Development (USAID). We work with geospatial organizations around the world, co-developing services to address environmental challenges. ITC is the faculty of geo-information science and Earth Observation at the University of Twente. SERVIR and ITC have been partnered since 2018. The curriculum development intiative was launched in 2021, and set out to integrate geospatial tools developed by SERVIR in ITC's Curriculum in the Master's Program in Geo-information Science and Earth Observation (M-GEO). SERVIR and ITC co-developed modules regarding SERVIR tools that were integrated as brief units in pre-existing courses. These curriculum materials were developed to support a specific use in the course each tool was paried with. In 2023, SERVIR began adapting these materials for use in Geoversity, a virtual learning platform developed by ITC. 
+
+# Folders 
+The folder labelled "2022-23" contains curriculum materials developed for ITC M-GEO courses that ran during the 2022-2023 Academic Year. The folder labelled "2023-24" contains curriculum materials for courses that ran during the 2023-2024 academic year. The folder labelled "Geoversity" contains curriculum materials that were developed for ITC's virtual learning platform, Geoversity. Within each of these folders, the curriculum materials are organized according to the tool they were developed for. As of May 2024, SERVIR/ITC developed curricula for four SERVIR tools, Collect Earth Online (CEO), ClimateSERV, The Hydrologic Remote Sensing Analysis of Floods Tool (HYDRAFloods), and the Radar Mining Monitoring Tool (RAMI).
