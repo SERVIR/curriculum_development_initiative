@@ -10,6 +10,9 @@ The folder labelled "2022-23" contains curriculum materials developed for ITC M-
 # Notice
 The curriculum materials accessed in this repository may be out of date due to updates to our tools or the software they depend on (e.g. Python & Google Earth Engine). For assistance using our tools, feel free to get in touch with us at https://servirglobal.net/.
 
+# Funding Information 
+Funding for this work was provided through the cooperative agreement 80MSFC22N0004 between NASA and the University of Alabama in Huntsville (UAH). SERVIR is a joint NASA and USAID-led program. 
+
 
 
 
