@@ -1,0 +1,1 @@
+The curriculum materials in this folder were developed for the ITC course "Quantitative Remote Sensing of Vegetation Parameters" during the 2022-2023 academic year. ITC is the Faculty of Geo-information Science and Earth Observation at the University of Twente. These curriculum materials were developed to help students use ClimateSERV as a part of this course. 
