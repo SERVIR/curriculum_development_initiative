@@ -1,5 +1,5 @@
 # Background
-The curriculum materials in this folder were developed for the ITC course "Observing and Modelling Surface Water in a Changing World" during the 2022-2023 academic year. ITC is the Faculty of Geo-information Science and Earth Observation at the University of Twente. These curriculum materials were developed to help students use ClimateSERV as a part of this course.
+The curriculum materials in this folder were developed for the ITC course "Forest Monitoring and Carbon Stock Estimation with Multi-Source Remote Sensing in the Context of Climate Change" during the 2022-2023 academic year. ITC is the Faculty of Geo-information Science and Earth Observation at the University of Twente. These curriculum materials were developed to help students use ClimateSERV as a part of this course.
 
 # Directions
 It is recommended that you view these curriculum materials in the following order:
