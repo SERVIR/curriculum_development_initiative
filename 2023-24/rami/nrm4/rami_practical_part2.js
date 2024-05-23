@@ -254,7 +254,20 @@ var alerts_final = filterMinPatches(alertsFiltered, min_area, max_size);
 
 Map.addLayer(alertsFiltered, vis, 'Final RAMI Output'); 
 
-// Delete below; 
-print(geometry);
+//////////////////////////////////////////////////////////////////////////////////
+//                               Acknowledgements                               //
+//////////////////////////////////////////////////////////////////////////////////
 
+//RAMI was developed by SERVIR-Amazonia. The development team includes Lucio Villa, 
+// Milagros Becerra, Sidney Novoa, Osmar Yupanqui, and John Dilger. 
+
+// This module uses code from “Chapter A1.8: Monitoring Gold Mining Activity Using SAR”  
+// from the Open-Source Book “Cloud-Based Remote Sensing with Google Earth Engine: Fundamentals 
+// and Applications”. This chapter was written by Lucio Villa, Sidney Novoa, Milagros Becerra, 
+// Andrea Puzzi Nicolau, Karen Dyson, Karis Tenneson, and John Dilger. 
+
+// Review of the curriculum was conducted by Margarita Huesca Martinez and Michael Schlund, 
+// Kelsey Herndon, Emil Cherrington, Diana West, Katie Walker, Lauren Carey, Jacob Abramowitz,
+// Jake Ramthun, Natalia Bermudez, Stefanie Mehlich, Emily Adams, Stephanie Jimenez, Vanesa Martin, 
+// Alex Goberna, Francisco Delgado, Biplov Bhandari, and Amanda Markert. 
 
