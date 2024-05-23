@@ -1,0 +1,388 @@
+            /////////////////////////////////////////////////////////////////////////////
+            //               RAMI Module 3 Supplementary Material                      //
+            //              Radar Mining Monitoring Tool Practical                     //
+            //                                                                         // 
+            //                SERVIR Science Coordination Office                       // 
+            //                    Curriculum Development Team                          // 
+            //                          Micky Maganini                                 //
+            //                     Contact: mrm0065@uah.edu                            //
+            //                                                                         //
+            //     Prepared for "Forest Monitoring and Carbon Stock Estimation with    //
+            // Multi-Source Remote Sensing in the Context of Climate Change" at ITC    //
+            //                     Quartile 4 2022-2023                                //
+            //                                                                         //
+            /////////////////////////////////////////////////////////////////////////////
+
+// This Google Earth Engine script serves as supplementary material to RAMI 
+// Module 3, which can be found at the following link:
+// https://docs.google.com/document/d/1WIodVv51L3GSZziFHSmuhzWii_CqTNcbx512lLK6cKA/edit?usp=sharing
+
+// Click the "Run" button in the upper right. This will start the program 
+
+
+////////////////////////////////////////////////////////////////////////////
+//    Section 1: Pre-processing, Time Period and Region of Interest       //
+////////////////////////////////////////////////////////////////////////////
+
+// In this section, we will create a SAR Mosaic Time Series 
+
+// Define the area of study 
+var aoi = ee.FeatureCollection('projects/gee-book/assets/A1-8/mdd');
+
+// Center the map at the study region 
+Map.centerObject(aoi, 9); 
+
+// Create an empty image. 
+var empty = ee.Image().byte(); 
+
+// Next we will convert the area of study to an Earth Engine object so we can visualize the boundary on the map.
+// This is the Madre de Dios region of the Peruvian amazon, the same study are we looked at in Module 2. 
+
+var aoiOutline = empty.paint({
+  featureCollection: aoi,
+  color: 1, 
+  width: 2
+}); 
+
+// Select the satellite basemap view 
+Map.setOptions('SATELLITE'); 
+
+// Add the area of study boundary to the map. 
+Map.addLayer(aoiOutline, {
+  palette: 'red'
+}, 'Area of Study'); 
+
+// Now, we will define a function that will mask SAR images acquired at an 
+// incidence angle less than or equal to 31 degrees or greater than 45 degrees.
+
+function maskAngle(image) {
+  var angleMask = image.select('angle'); 
+  return image.updateMask(angleMask.gte(31).and(angleMask.lte(45))); 
+}
+
+// Next, we wil define a function to get our Sentinel-1 image collection based on three input parameters. 
+// These parameters include the dates we want to select, the region of interest, and the 
+// orbite pass (ascending or descending) images we want 
+
+function getCollection(dates, roi, orbitPass0) {
+  var sarCollFloat = ee.ImageCollection("COPERNICUS/S1_GRD_FLOAT")
+      .filterBounds(roi)
+      .filterDate(dates[0], dates[1])
+      .filter(ee.Filter.eq('orbitProperties_pass', orbitPass0)); 
+  return sarCollFloat.map(maskAngle).select(['VV', 'VH'])
+}
+
+// Now let's define the time period we want to look at, as well as the orbit pass we want to use 
+
+var listOfDates = ['2021-01-01', '2022-01-01']; 
+var orbitPass = 'DESCENDING'; 
+
+// Apply the function we created in line 65 to get the SAR image collection. 
+
+var sarImageColl = getCollection(listOfDates, aoi, orbitPass); 
+print('SAR Image Collection', sarImageColl)
+
+////////////////////////////////////////////////////////////////////////////
+//                            Exercise  1                                 //
+////////////////////////////////////////////////////////////////////////////
+
+// Click the "Run" button towards the top of the screen 
+// Click the "console" tab in the upper right corner of the screen.
+
+// This is the console of the program. Whenever we print something in the program, 
+// it will get printed here. 
+
+// The first thing that is printed is the image collection we got in line 80. 
+// Click on the expander arrow to the left of the text that says "ImageCollection ....", 
+// then click the expander arrow to the left of the text that says "features". 
+// This will expand the list of images in this image collection. You can continue 
+// clicking the different images to expand them and view their properties. 
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Next, let's write a function to get dates in 'YYYY-mm-dd' format. 
+function getDates(dd) {
+  return ee.Date(dd).format('YYYY-MM-dd');
+}
+
+// And another function to clip our SAR Mosaic to the study area
+function mosaicSAR(dates1) {
+  dates1 = ee.Date(dates1); 
+  var imageFilt = sarImageColl
+        .filterDate(dates1, dates1.advance(1, 'day')); 
+  return imageFilt.mosaic()
+        .clip(aoi)
+        .set({
+          'system:time_start': dates1.millis(), 
+          'dateYMD': dates1.format('YYYY-MM-dd')
+        });
+}
+
+////////////////////////////////////////////////////////////////////////////
+//                Section 2: Apply Change Detection                     //
+////////////////////////////////////////////////////////////////////////////
+
+// This next function will generate a list of dates without duplicate elements 
+// (i.e. where there are images from the same dates in the collection, we will only keep one)/ 
+// This will output an image collection of mosaics
+
+// Function to get a SAR Collection of mosaics per date. 
+var datesMosaic = ee.List(sarImageColl
+        .aggregate_array('system:time_start'))
+      .map(getDates)
+      .distinct();
+      
+var getMosaicList = datesMosaic.map(mosaicSAR); 
+var getMosaicColl = ee.ImageCollection(getMosaicList); 
+
+print('get Mosaic Collection', getMosaicColl);
+
+// Map the "datesMosaic" function we just defined over the sarImageColl image collection. 
+// Mapping a function just means we will apply the same function to every image within 
+// an image collection. 
+
+// Now we will apply our Omnibus Q-test Change Detection Algoirthm. We will 
+// import the code to do so from two separate scripts using the "require" method.
+
+var omb = require(
+  'projects/gee-edu/book:Part A - Applications/A1 - Human Applications/A1.8 Monitoring Gold Mining Activity Using SAR/modules/omnibusTest_v1.1'
+);
+
+var util = require(
+'projects/gee-edu/book:Part A - Applications/A1 - Human Applications/A1.8 Monitoring Gold Mining Activity Using SAR/modules/utilities_v1.1'
+);
+
+// Get the length of the list of dates of the time-series . 
+var countDates = datesMosaic.size().getInfo(); 
+
+// Before applying change algorithm, we need to define the input parameters 
+// such as the significance and the reducer to be applied (median in this case). 
+
+// This will result in an ee.Dictionary with cmap, smap, fmap, and bmap images. 
+// cmap is the interval in which the most recent significant change occurred (single-band). 
+// smap is the interval in which the first significant change occurred (single-band). 
+// fmap is the frequency of significant changes (single-band). 
+// bmap is the interval in which each significant change occurred.
+
+var significance = 0.0001; 
+var median = true; 
+var result = ee.Dictionary(omb.omnibus(getMosaicList, significance, median)); 
+
+print('result', result)
+
+// The result is an Earth Engine dictionary containing the cmap, smap, fmap, and bmap images, 
+// which we can extract using the "get" function 
+
+var cmap = ee.Image(result.get('cmap')).byte(); 
+var smap = ee.Image(result.get('smap')).byte(); 
+var fmap = ee.Image(result.get('fmap')).byte(); 
+var bmap = ee.Image(result.get('bmap')).byte(); 
+
+// Now we need to make a feature collection to print the list of dates that our SAR images were taken at.
+var fCollectionDates = ee.FeatureCollection(datesMosaic
+    .map(function(element) {
+      return ee.Feature(null, {
+          prop: element
+      }); 
+    }));
+    
+print('Dates', datesMosaic)
+
+// Set a color palette for our map
+var jet = ['black', 'blue', 'cyan', 'yellow', 'red'];
+
+// Set some visualization parameters for our 
+var vis = {
+  min: 0, 
+  max: countDates, 
+  palette: jet
+};
+
+// Add resulting images and legend to map 
+Map.add(util.makeLegend(vis)); 
+Map.addLayer(cmap, vis, 'cmap -- recent change (unfiltered)'); 
+Map.addLayer(smap, vis, 'smap -- first change (unfiltered)'); 
+Map.addLayer(fmap.multiply(2), vis, 'fmap -- frequency of change');
+
+// Add a specific region of interest to the map
+
+var corridor = ee.Geometry.Rectangle([-70.113807, -12.9803616, -69.9654924, -12.8947021]);
+
+var corriOutline = empty.paint({
+  featureCollection: corridor,
+  color: 1, 
+  width: 2
+}); 
+Map.addLayer(corriOutline, {
+  palette: 'blue'}, 'Mining Corridor')
+
+////////////////////////////////////////////////////////////////////////////
+//                                    Exercise 2                           //
+////////////////////////////////////////////////////////////////////////////
+
+// Using the Layers tab towards the top right of the map interface, 
+// click all of the layers off except for the smap layer. This layer 
+// will show us the day the first change occurred. The smap image 
+// will appear as all black, but if we zoom in we can see the results. 
+// Zoom into the region indicated by the blue square and note what colors you see.
+
+// To see what date the number corresponds to, open the dates list by 
+// clicking the expander arrow under the text that says "Dates".
+
+// Click different layers to turn them on or off.
+
+
+////////////////////////////////////////////////////////////////////////////
+//             Section 3: Filtering and Post-Processing                   //
+////////////////////////////////////////////////////////////////////////////
+
+// In this section, we will mitigate the number of false positives generated by RAMI
+// These false positivese are associated with forest loss due to river morphology change 
+// and the presence of muddy water bodies. 
+
+// Our first post-processing step is to filter out areas that have an elevation greater 
+// than 1000 meters above sea level and areas that have a slope greater than 15 degrees.
+// We will use the Shuttle Radar Topography Mission (SRTM) Digital Elevation Model (DEM) 
+// to locate these areas and mask any positive detections that occur in this area out. 
+// We filter out high elevation and high slope areas as we know that mining activity 
+// in the Madre de Dios region occurs only in lowlands (and also because steep slopes 
+// generate distortions in SAR images. 
+
+
+// Get the SRTM Digital Elevation Model
+var srtm = ee.Image('USGS/SRTMGL1_003').clip(aoi); 
+
+// Use the Earth Engine Terrain Slope method on the srtm data to calculate the slope at every pixel. 
+var slope = ee.Terrain.slope(srtm);
+
+// Now we will filter out areas that were identified as forest or water
+
+// Get the Hansen Global Forest change Dataset 
+var gfc = ee.Image('UMD/hansen/global_forest_change_2020_v1_8').clip(aoi); 
+
+// Filter the Hansen Dataset to areas that were forest in 2020 
+
+var forest2020 = gfc.select('treecover2000')   // Select the treecover band
+    .gt(0)                                     // Filter to areas that are greater than or equal to 0 (i.e. forest)
+    .updateMask(gfc.select('loss')             // Select the forest loss band
+        .neq(1))                               // Filter to areas that are not equal to one (i.e. forest loss did not occur in 2020)
+    .selfMask();                               // Mask.
+
+
+// Get the Joint Research Center Yearly Surface Water dataset v1.3 
+var waterJRC = ee.Image('JRC/GSW1_3/GlobalSurfaceWater').select(
+    'max_extent') // select the maximum extent band of the JRC surface water dataset 
+
+
+// Now let's apply our filters 
+
+var alertsFiltered = smap
+    .updateMask(srtm.lt(1000))    // Areas with elevation < 1000 meters 
+    .updateMask(slope.lt(15))      // Areas with < 15 degrees slope 
+    .updateMask(forest2020.eq(1)) // Mask out areas that are forest 
+    .updateMask(waterJRC.eq(0))   // Mask out areas that are not water 
+    .selfMask();                  // Mask out areas where smap = 0 (i.e. no change has occurred)
+    
+// As a final postprocessing step, we will filter out small patches and isolated pixels, 
+// as we know that mining in this area occurs in mining pits > 0.5 hectares in size.
+    
+function filterMinPatches(alerts0, minArea0, maxSize0){
+  var pixelCount = alerts0.gt(0).connectedPixelCount(maxSize0); 
+  var minPixelCount = ee.Image(minArea0).divide(ee.Image.pixelArea()); 
+  
+  return alerts0.updateMask(pixelCount.gte(minPixelCount)); 
+}
+
+// Apply the function and visualize the filtered results. 
+var alerts_final = filterMinPatches(alertsFiltered, 10000, 200); 
+
+Map.addLayer(alertsFiltered, vis, 'Final RAMI Output'); 
+Map.centerObject(corridor, 9)
+
+////////////////////////////////////////////////////////////////////////////
+//                 Section 4: Calculating Carbon Stock                    //
+////////////////////////////////////////////////////////////////////////////
+
+// Now we are going to take the deforestation map (smap) and calculate the amount of 
+// carbon emissions that are associated with the deforestation identified by RAMI. 
+
+// First we will use the gt method to produce a binary image that has 
+// a value of 1 where smap is greater than 0 and has a value of 0 where 
+// smap is not greater than 0. 
+var deforestation = alertsFiltered.gt(0); 
+
+// Now we will use the "pixelArea" method to 
+var pixel_area = deforestation.multiply(ee.Image.pixelArea())
+
+var area = pixel_area.reduceRegion({
+  'reducer': ee.Reducer.sum(), 
+  'geometry': aoi, 
+  'scale': 10, 
+  'maxPixels': 1e13
+})
+
+// In Module 3, we found an Equation, Equation I, which stated that  E = S * A * C. 
+
+// where E = the mass of carbon dioxide emitted 
+//       S = the carbon stock density (mass per unit area)
+//       A = the area that has been deforested 
+//       C = the molecular mass ratio of carbon dioxide to carbon. 
+
+// Let's define a function for this equation 
+
+function equation_i(s, a, c){
+  // e = s * a * c
+  var e = ee.Number(s.multiply(a).multiply(c));
+  return e;
+}
+
+// In Module 3 we saw that this region of the Madre de Dios region was determined to have a carbon stock density 
+// of between 110 and 115 Mg/Ha. Let's assume the entire area has the upper limit of this carbon stock density, 
+// which is 115. Let's set a variable
+
+// This will be "S" in the equation above
+var carbon_stock_density = ee.Number(115);
+
+// Now let's define "C" in the equation above, which is the molecular mass ratio of carbon dioxide to carbon. 
+// Carbon dioxide has a molecular mass of approximately 44 g/mol, whereas elemental carbon has a molecular 
+// mas of approximately 12 g/mol. Thus, the ratio we will use is 44/12
+var co2_c_ratio = ee.Number(ee.Number(44).divide(ee.Number(12)))
+
+// Now, let's define "A" in the equation above, which is the total deforested area. Here we will have to do a unit conversion, 
+// because earlier we calculated the deforested area in units of square meters. However, our S value is in units of 
+// Mg/ha, where ha = hectares. There are 10.000 square meters in a hectare, so let's divide by 10.000 to get our deforested 
+// area in terms of ha.
+
+var area_converted = ee.Number(area.get('VV')).divide(1e4); 
+
+// Now, let's call our function to calculate the carbon emissions 
+
+var co2_emitted = equation_i(carbon_stock_density, area_converted, co2_c_ratio);
+
+// Now we have the total amount of carbon stock that was lost when these trees were deforested. 
+// But this carbon is converted from carbon to carbon dioxide and degassed now that the trees are dead.
+
+print('Total Carbon stock of deforested area in metric tonnes', '', co2_emitted, 'Metric Tonnes of CO_2', '');
+
+// Earlier in Module 2 we found that in 2017 alone for the Madre de Dios region alone, Csilik et al found that there
+// were a million tonnes of CO2 emitted from deforestation. 
+
+// As we can see in the console, RAMI predicted that deforestation due to gold mining in this small region of the Madre de Dios province released 
+// 750,000 metric tonnes of CO2 in 2021. 
+
+// You have reached the end of the module! Feel free to change the dates to see RAMI's outputs for separate time periods.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                            Acknowledgements                                       //
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
