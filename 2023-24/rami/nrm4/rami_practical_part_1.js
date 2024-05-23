@@ -13,6 +13,9 @@
             //                                                                         //
             /////////////////////////////////////////////////////////////////////////////
 
+// This code is intended to be run in the Google Earth Engine Code Editor (Javascript Interface), which can be found at the following link:
+// https://code.earthengine.google.com/
+
 // This Google Earth Engine script serves as supplementary material to RAMI 
 // Module 3, which can be found at the following link:
 // https://docs.google.com/document/d/1E1CgzW1K7RyIhleCfCwxOqeI3PNHpkfT11LAOILUUFo/edit?usp=sharing
