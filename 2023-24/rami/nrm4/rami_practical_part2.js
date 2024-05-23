@@ -20,7 +20,7 @@
 // Module 3, which can be found at the following link:
 // https://docs.google.com/document/d/1WIodVv51L3GSZziFHSmuhzWii_CqTNcbx512lLK6cKA/edit?usp=sharing
 
-// This Module follows the exact same workflow we used in Script_1, except this time you will try the algorithm 
+// This Module follows the exact same workflow we used in rami_practical_part1, except this time you will try the algorithm 
 // over your own area of interest. In attempting to translate this algorithm to a new area of interest, keep in 
 // mind what we learned in Module 2. Ask yourself: What does RAMI rely on to detect change? How might the circumstances in your area 
 // of interest be different from the Madre de Dios region we looked at in Part 1 of the practical?
