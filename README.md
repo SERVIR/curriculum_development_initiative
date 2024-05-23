@@ -14,6 +14,12 @@ The curriculum materials accessed in this repository may be out of date due to u
 # Funding Information 
 Funding for this work was provided through the cooperative agreement 80MSFC22N0004 between NASA and the University of Alabama in Huntsville (UAH). SERVIR is a joint NASA and USAID-led program. 
 
+# DOI 
+The current release of this repository is marked with the following Digital Object Identifier (DOI). 
+[![DOI](https://zenodo.org/badge/798951745.svg)](https://zenodo.org/doi/10.5281/zenodo.11267739)
+
+
+
 
 
 
